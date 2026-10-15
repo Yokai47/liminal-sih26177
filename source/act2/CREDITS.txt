@@ -1,0 +1,20 @@
+LIMINAL · Act 2 · asset credits
+
+Textures (assets/tex/) — ambientCG (https://ambientcg.com), CC0 1.0 (public domain):
+  PaintedPlaster007/008/010/011/013/018, Plaster007, Concrete045, Tiles070/074/101/129B, Carpet012,
+  Rocks006/016, WoodSiding003, Planks025A, Metal047B/053C, Fabric023, GraffitiSet001.
+
+Props (assets/models/) — Poly Haven (https://polyhaven.com), CC0 1.0 (public domain):
+  metal_office_desk, SchoolChair_01, plastic_monobloc_chair_01, cardboard_box_01, worn_metal_rack, small_lpg_tank,
+  WetFloorSign_01, power_box_01, korean_fire_extinguisher_01, mounted_fluorescent_lights, caged_hanging_light,
+  concrete_road_barrier_02, Barrel_01, portable_generator, security_camera_01, medical_box, modular_industrial_pipes_01,
+  trashbag, fire_alarm, potted_plant_01, potted_plant_02, wall_clock, classic_laptop, Television_01, television_02, metal_jerrycan.
+
+survivor.glb — "Cesium Man" by Cesium (https://cesium.com), Khronos glTF Sample Assets.
+  Licence: CC-BY 4.0 (https://creativecommons.org/licenses/by/4.0/). This one needs a visible credit on the site.
+
+stair.glb, figure.glb, bust.glb — supplied by the team (staircase, anatomical figure used as the mannequin, head bust).
+  Check the licence of the site you downloaded them from before publishing.
+
+Libraries: three.js r160 (MIT), three-mesh-bvh 0.7.6 (MIT), loaded from jsDelivr.
+Everything else (layout, sounds, autonomy, HUD) is original to this project.

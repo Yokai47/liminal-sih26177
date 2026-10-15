@@ -1,0 +1,15 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>LIMINAL · Act 2 · You are the drone</title>
+<meta name="description" content="A collapsed floor, four survivors. Watch the drone explore it on its own, or fly it yourself.">
+<style>html,body{margin:0;height:100%;background:#030d22;overflow:hidden}#act2{position:fixed;inset:0}</style>
+<script type="importmap">{"imports":{
+  "three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
+  "three-mesh-bvh":"https://cdn.jsdelivr.net/npm/three-mesh-bvh@0.7.6/build/index.module.js"}}</script>
+</head><body><div id="act2"></div>
+<script type="module">
+import { createAct2 } from './js/act2.js';
+const q = new URLSearchParams(location.search);
+const act = await createAct2(document.getElementById('act2'), { base: 'assets/', tier: q.get('tier') || undefined, autoStart: q.has('auto') ? (q.get('auto') || true) : false, guide: q.has('guide') ? true : undefined });
+window.__act = act;
+</script></body></html>

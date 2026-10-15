@@ -1,0 +1,27 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>LIMINAL · Act 4 · The swarm at work</title>
+<style>
+@font-face { font-family: "Fraunces"; src: url("../fonts/fraunces-latin-full-normal.woff2") format("woff2"); font-weight: 100 900; font-style: normal; font-display: swap; }
+@font-face { font-family: "Fraunces"; src: url("../fonts/fraunces-latin-full-italic.woff2") format("woff2"); font-weight: 100 900; font-style: italic; font-display: swap; }
+@font-face { font-family: "Geist"; src: url("../fonts/geist-latin-wght-normal.woff2") format("woff2"); font-weight: 100 900; font-display: swap; }
+@font-face { font-family: "Geist Mono"; src: url("../fonts/geist-mono-latin-wght-normal.woff2") format("woff2"); font-weight: 100 900; font-display: swap; }
+html,body{margin:0;height:100%;background:#1E2140;overflow:hidden}
+#act4{position:fixed;inset:0}
+</style>
+<script type="importmap">{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
+  "three-mesh-bvh": "https://cdn.jsdelivr.net/npm/three-mesh-bvh@0.7.6/build/index.module.js"
+} }</script>
+</head><body><div id="act4"></div>
+<script type="module">
+// dev page. ?test = deterministic seed + window.__a4; ?m=city starts a mission directly; ?place forces placeholder worlds
+import { createAct4 } from './js/act4.js';
+const q = new URLSearchParams(location.search);
+window.__errs = []; addEventListener('error', (e) => window.__errs.push(String(e.message)));
+const act = await createAct4(document.getElementById('act4'), {
+  base: 'assets/', test: q.has('test'), start: q.get('m') || undefined, placeholder: q.has('place'), seed: q.get('seed') ? +q.get('seed') : undefined,
+  onReady: () => { window.__ready = true; }, onExit: () => { location.href = '../'; }, onLab: (id) => console.log('LAB', id),
+});
+if (q.has('test')) window.__a4 = act;
+</script></body></html>

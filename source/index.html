@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Liminal: someone is tapping</title>
+<meta name="description" content="A leaderless drone swarm that searches collapsed buildings for survivors. SIH 2026, problem statement 26177.">
+<meta name="theme-color" content="#1E2140">
+<meta property="og:title" content="Liminal">
+<meta property="og:description" content="A drone swarm with no leader, searching a collapsed building for the people inside. SIH 2026, problem statement 26177.">
+<meta property="og:image" content="act1/poster.webp">
+<link rel="icon" href="act1/icon.svg">
+<link rel="preload" href="fonts/fraunces-latin-full-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/geist-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="common/base.css">
+<link rel="stylesheet" href="act1/act1.css">
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
+  "three-mesh-bvh": "https://cdn.jsdelivr.net/npm/three-mesh-bvh@0.7.6/build/index.module.js"
+} }
+</script>
+</head>
+<body class="locked">
+<noscript><p class="nojs">This story needs JavaScript and WebGL. The project, the code and Act 2 are on <a href="https://github.com/Yokai47/liminal-sih26177">GitHub</a>.</p></noscript>
+<canvas id="gl" aria-hidden="true"></canvas>
+<canvas id="ov" aria-hidden="true"></canvas>
+<div id="labels" aria-hidden="true"></div>
+
+<div class="gate" id="gate" role="dialog" aria-labelledby="gate-title" aria-describedby="gate-line">
+  <canvas class="gate-swarm" aria-hidden="true"></canvas>
+  <div class="gate-in">
+    <h1 class="sr" id="gate-title">Liminal</h1>
+    <p class="gate-line" id="gate-line">A drone swarm with no leader, built to find the people trapped inside collapsed buildings.</p>
+    <p class="gate-play"><span class="pc">Move through the swarm: it scatters like a school of fish, then finds its shape again.</span><span class="tc">Touch the swarm: it scatters like a school of fish, then finds its shape again.</span></p>
+    <p class="gate-ask" aria-live="polite"><span class="gl-wait">The swarm is assembling</span><span class="gl-ready">It starts with a sound.</span></p>
+    <div class="gate-btns">
+      <button class="primary" id="go-sound" disabled>Enter with sound</button>
+      <button id="go-quiet" disabled>Enter without sound</button>
+    </div>
+    <p class="gate-note">Headphones help: the tapping comes from one direction. <button class="linkbtn" type="button" data-open="contents">See what's inside</button></p>
+  </div>
+</div>
+
+<div class="chrome" id="chrome" hidden>
+  <a class="mark" href="#c-hook">Liminal<small><span class="lg">SIH 2026, problem statement 26177</span><span class="sm">SIH 2026, PS 26177</span></small></a>
+  <div class="clock" aria-live="off"><span id="clock">71:42:18</span><small>left in the 72-hour window</small></div>
+  <nav aria-label="Chapters"><ol class="rail" id="rail">
+    <li><a href="#c-hook" data-k="0"><span>Tapping</span><i></i></a></li>
+    <li><a href="#c-stakes" data-k="1"><span>72 hours</span><i></i></a></li>
+    <li><a href="#tools" data-k="tools"><span>Today's tools</span><i></i></a></li>
+    <li><a href="#c-agent" data-k="2"><span>One drone</span><i></i></a></li>
+    <li><a href="#c-swarm" data-k="3"><span>The swarm</span><i></i></a></li>
+    <li><a href="#c-done" data-k="4"><span>Finished</span><i></i></a></li>
+    <li><a href="#beyond" data-k="beyond"><span>Other disasters</span><i></i></a></li>
+    <li><a href="#c-people" data-k="5"><span>People</span><i></i></a></li>
+    <li><a href="#acts" data-k="acts"><span>The five acts</span><i></i></a></li>
+  </ol></nav>
+  <button class="cbtn" id="cbtn" type="button" data-open="contents" aria-haspopup="dialog"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M5 12h14M5 17h9"/></svg>Contents</button>
+  <button class="fs" id="fs" aria-label="Full screen" title="Full screen (F)"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="o" d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/><path class="c" d="M9 4v5H4M20 9h-5V4M15 20v-5h5M4 15h5v5"/></svg></button>
+  <button class="snd" id="snd" aria-label="Sound" aria-pressed="true"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="spk" d="M4 9.5h3.2L12 5.5v13l-4.8-4H4z"/><path class="w1" d="M15.2 9.2a4 4 0 0 1 0 5.6"/><path class="w2" d="M17.8 6.8a7.4 7.4 0 0 1 0 10.4"/><path class="x" d="M16 9.5l5 5m0-5l-5 5"/></svg><span class="snd-l">Sound</span></button>
+  <p class="hint" id="hint"><span class="pc">Move your cursor to aim the torch.</span><span class="tc">Drag to aim the torch.</span></p>
+</div>
+
+<main id="story">
+  <section class="ch" id="c-hook" data-ch="0">
+    <div class="ch-in">
+      <h2 class="ch-h" id="hook-h"><span class="w w1">Somewhere under this,</span> <span class="w w2">someone is</span> <span class="w w3">tapping.</span></h2>
+      <p class="ch-p hook-p" id="hook-p">Aim the torch. Find where the knocking comes from.</p>
+      <p class="showme"><button id="showme" class="linkbtn" hidden>Show me where</button></p>
+    </div>
+  </section>
+
+  <section class="ch" id="c-stakes" data-ch="1">
+    <div class="ch-in">
+      <h2 class="ch-h">Seventy-two hours.</h2>
+      <p class="ch-p">That is roughly the window in which people trapped by a collapse are still found alive. Inside, GPS doesn't reach, radio carries a few rooms at most, and one drone can only search one room at a time.</p>
+      <p class="ch-p">More drones don't fix that on their own. If none of them knows what the others have already searched, ten drones search the same rooms over and over.</p>
+    </div>
+  </section>
+
+  <section class="ch" id="c-agent" data-ch="2">
+    <div class="ch-in">
+      <h2 class="ch-h">One drone asks one question: where next?</h2>
+      <p class="ch-p">It draws its own map as it flies. LiDAR marks each patch of floor as <span class="k k-free">free</span>, <span class="k k-occ">occupied</span> or still <span class="k k-unk">unknown</span>. Where free meets unknown is a <span class="k k-fr">frontier</span>, and the drone flies to the one that reveals the most for the least travel.</p>
+      <p class="ch-p">Cut its radio and it simply carries on alone. The swarm is added on top of a complete drone, never needed to hold one up.</p>
+      <p class="ch-stat" aria-live="off" id="a-cov">0 m² mapped by this drone</p>
+    </div>
+  </section>
+
+  <section class="ch" id="c-swarm" data-ch="3">
+    <div class="ch-in">
+      <h2 class="ch-h">No leader. No pilot. No orders.</h2>
+      <p class="ch-p">Each drone shares only what it has searched, about half a kilobyte a second, and the maps merge cleanly even when a message arrives late or never. Nobody assigns rooms: a drone just steers clear of the frontiers its neighbours have already claimed.</p>
+      <p class="ch-p ph-hide">The fleet is held at the edge between flocking and scattering, where one drone's turn ripples through the rest without a command being sent. That threshold is where the name comes from.</p>
+      <div class="race" role="img" aria-label="Floor area flown until nothing is left to search: eight LIMINAL drones, eight drones that don't share, one drone">
+        <p class="race-t">Floor area flown until nothing is left to search. Hatched: rooms searched again by a drone that didn't know.</p>
+        <div class="race-row"><span class="race-n">Eight, LIMINAL</span><span class="race-b"><i id="r8"></i></span><span class="race-v" id="r8v">0</span></div>
+        <div class="race-row"><span class="race-n">Eight, not sharing</span><span class="race-b"><i id="ru"></i><b id="ruw"></b></span><span class="race-v" id="ruv">0</span></div>
+        <div class="race-row"><span class="race-n">One drone</span><span class="race-b"><i id="r1"></i></span><span class="race-v" id="r1v">0</span></div>
+        <p class="race-c" id="rc"></p>
+      </div>
+    </div>
+  </section>
+
+  <section class="ch" id="c-done" data-ch="4">
+    <div class="ch-in">
+      <h2 class="ch-h">Finished is a number, not a feeling.</h2>
+      <p class="ch-p">Every pocket nobody has seen yet is counted and numbered, wherever it hides. At first the count climbs, as the drones find rooms nobody knew were there; then it falls as each one is searched. A pocket keeps its number until it is gone. The search isn't over until the count reaches zero.</p>
+      <div class="beta-row"><p class="ch-beta" aria-live="polite"><span class="b">β₀</span> = <span id="beta">–</span><small id="beta-note">unexplored pockets left</small></p><canvas id="b0spark" width="260" height="46" aria-hidden="true"></canvas><canvas id="mini" aria-label="The four floors: mapped cells and the unexplored pockets, numbered"></canvas></div>
+      <p class="ch-p">Only then does the swarm stop and hand the responders a report of everything it found.</p>
+    </div>
+  </section>
+
+  <section class="ch" id="c-people" data-ch="5">
+    <div class="ch-in">
+      <h2 class="ch-h">The map is the means. Finding people is the point.</h2>
+      <p class="ch-p">Back in the void, at first light. Thermal sees the warmth through the rubble; the camera confirms the shape. A person is marked only when both agree, and the responders outside get the spot and the way in.</p>
+      <div class="cta">
+        <a class="btn primary" href="act2/" id="fly"><svg class="bi" viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="6" r="2.6"/><circle cx="18" cy="6" r="2.6"/><circle cx="6" cy="18" r="2.6"/><circle cx="18" cy="18" r="2.6"/><path d="M8 8l8 8M16 8l-8 8"/></svg><span>Fly the first drone</span></a>
+        <a class="btn" href="#inside" id="inside"><svg class="bi" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l9 5-9 5-9-5z"/><path d="M3 12.5l9 5 9-5"/><path d="M3 17l9 5 9-5"/></svg><span>Open the drone up</span></a>
+        <button class="btn" type="button" data-open="act4"><svg class="bi" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M10 8.5l5 3.5-5 3.5z"/></svg><span>Watch the swarm work</span></button>
+        <button class="btn" type="button" data-open="act5"><svg class="bi" viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="8" r="1.7"/><circle cx="12" cy="4.5" r="1.7"/><circle cx="19" cy="8.5" r="1.7"/><circle cx="7.5" cy="15.5" r="1.7"/><circle cx="16" cy="16" r="1.7"/><circle cx="12" cy="10.5" r="1.7"/><path d="M12 19.5v.01"/></svg><span>Open the swarm lab</span></button>
+        <a class="btn ghost" href="https://github.com/Yokai47/liminal-sih26177" target="_blank" rel="noopener"><svg class="bi" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 7L3.5 12l5 5M15.5 7l5 5-5 5"/></svg><span>Read the code</span></a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div id="act2host" hidden><p class="a2wait">Loading Act 2: the drone</p></div>
+<div id="act5host" hidden tabindex="-1" role="region" aria-label="Act 5: inside the swarm"></div>
+<div id="act4host" hidden><p class="a4wait">Loading Act 4: the swarm at work</p></div>
+<div id="act3host" hidden><p class="a3wait">Loading Act 3: inside one drone</p></div>
+<script type="module" src="act1/main.js"></script>
+</body>
+</html>
