@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LIMINAL Layer 2 Live Demo</title>
+<style>
+:root{
+  --bg:#12171c; --panel:#1a2129; --line:#2a343e;
+  --ink:#e8edf2; --muted:#8fa0b0; --faint:#6f8294;
+  --terra:#e07a42; --teal:#3fa4a8; --gold:#d9b25a; --purple:#9b8bd0;
+  --f-sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,Roboto,Helvetica,Arial,sans-serif;
+  --f-mono:ui-monospace,'SF Mono','Cascadia Code',Consolas,monospace;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-sans);font-size:14px}
+.wrap{max-width:1240px;margin:0 auto;padding:1.6rem 16px 3rem}
+header{border-bottom:1px solid var(--line);padding-bottom:1rem;margin-bottom:1.1rem}
+h1{margin:0 0 .3rem;font-size:1.5rem;letter-spacing:-.02em}
+.sub{color:var(--muted);font-size:.88rem;margin:0 0 .6rem;max-width:75ch;line-height:1.5}
+.banner{background:#2a2016;border-left:3px solid var(--terra);border-radius:0 6px 6px 0;padding:.55rem .8rem;font-size:.82rem;color:var(--ink);max-width:75ch;line-height:1.5}
+.banner a{color:var(--gold)}
+
+.tabs{display:flex;gap:.4rem;margin-bottom:1.1rem;flex-wrap:wrap}
+.tab{background:var(--panel);border:1px solid var(--line);color:var(--muted);
+     padding:.5rem .9rem;border-radius:7px;cursor:pointer;font-size:.82rem;font-weight:600;
+     font-family:inherit;transition:.15s}
+.tab:hover{color:var(--ink);border-color:var(--faint)}
+.tab.on{background:var(--terra);border-color:var(--terra);color:#12171c}
+button:focus-visible,input:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+
+.pane{display:none}
+.pane.on{display:block}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:1.1rem;align-items:start}
+@media(max-width:900px){.grid{grid-template-columns:minmax(0,1fr)}}
+
+canvas{background:#0d1216;border:1px solid var(--line);border-radius:9px;width:100%;display:block}
+.side{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:1rem 1.1rem}
+.side h3{margin:0 0 .5rem;font-size:.95rem;color:var(--terra)}
+.side p{margin:.45rem 0;color:var(--muted);font-size:.81rem;line-height:1.55}
+.side p b{color:var(--ink)}
+
+.ctl{margin:.8rem 0}
+.ctl label{display:flex;justify-content:space-between;font-size:.78rem;color:var(--muted);margin-bottom:.3rem}
+.ctl label span{font-family:var(--f-mono);color:var(--gold)}
+input[type=range]{width:100%;accent-color:var(--terra)}
+button{background:var(--panel);border:1px solid var(--faint);color:var(--ink);padding:.42rem .8rem;
+       border-radius:6px;cursor:pointer;font-family:inherit;font-size:.78rem;margin:.15rem .25rem .15rem 0}
+button:hover{border-color:var(--terra);color:var(--terra)}
+
+.readout{display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin:.8rem 0}
+.rd{background:#0d1216;border:1px solid var(--line);border-radius:7px;padding:.5rem .6rem}
+.rd .v{font-family:var(--f-mono);font-size:1.25rem;font-weight:700;color:var(--teal)}
+.rd .l{font-size:.7rem;color:var(--faint);margin-top:.1rem}
+.rd.hot .v{color:var(--terra)}
+.rd.gold .v{color:var(--gold)}
+.rd.purple .v{color:var(--purple)}
+
+.note{background:#0d1216;border-left:3px solid var(--gold);border-radius:0 6px 6px 0;
+      padding:.6rem .8rem;margin:.8rem 0;font-size:.78rem;color:var(--muted);line-height:1.5}
+.note b{color:var(--gold)}
+.phase{font-family:var(--f-mono);font-size:.8rem;padding:.35rem .6rem;border-radius:5px;
+       display:inline-block;margin-top:.4rem}
+.legend{font-size:.74rem;color:var(--faint);margin-top:.5rem;line-height:1.6}
+.sw{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:.3rem;vertical-align:middle}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>LIMINAL Layer 2: three mechanisms, live</h1>
+  <p class="sub">Point-mass simulations in the browser: flocking and its transition, a reaction&ndash;diffusion pattern, and counting the unexplored regions of a map. No drones are modelled here.</p>
+  <div class="banner"><b>Simulation, for illustration.</b> These demos use their own small settings and run in your browser. The measured results, with many runs each, are in <a href="report.html">the report</a>.</div>
+</header>
+
+<div class="tabs" role="tablist">
+  <button class="tab on" data-p="crit">1. Flocking and its transition</button>
+  <button class="tab" data-p="turing">2. Reaction&ndash;diffusion patterns</button>
+  <button class="tab" data-p="topo">3. Counting unexplored regions</button>
+</div>
+
+<!-- ============ 1. VICSEK ============ -->
+<div class="pane on" id="crit">
+  <div class="grid">
+    <div>
+      <canvas id="cv1" width="820" height="560"></canvas>
+      <canvas id="cv1b" width="820" height="150" style="margin-top:.6rem"></canvas>
+    </div>
+    <div class="side">
+      <h3>The Vicsek model</h3>
+      <p>Each agent moves at constant speed. Every step it takes the <b>average heading of all agents within a fixed radius</b> (itself included), adds a random angle drawn evenly from &minus;&eta;/2 to +&eta;/2, and moves that way. There is no leader and no central plan; each agent only needs its neighbours' headings.</p>
+
+      <div class="ctl">
+        <label for="s-eta">Noise &eta; <span id="v-eta">2.90</span></label>
+        <input type="range" id="s-eta" min="0" max="5" step="0.02" value="2.90">
+      </div>
+      <div class="ctl">
+        <label for="s-n">Agents N <span id="v-n">300</span></label>
+        <input type="range" id="s-n" min="50" max="600" step="10" value="300">
+      </div>
+
+      <div class="readout">
+        <div class="rd"><div class="v" id="r-phi">&mdash;</div><div class="l">Order &Phi; (1 = all aligned)</div></div>
+        <div class="rd gold"><div class="v" id="r-chi">&mdash;</div><div class="l">Susceptibility &chi;</div></div>
+      </div>
+      <div id="r-phase" class="phase">&mdash;</div>
+
+      <div class="note">
+        <b>Try a sweep.</b> Order falls as the noise rises. In a flock this small the fall is spread over a range of noise; the larger the flock, the sharper it gets. (In the report, 8 agents show only a broad, shallow maximum in &chi;, barely above the level of random headings, and the peak grows taller and sharper with flock size.)
+      </div>
+      <p><b>&chi;</b> is N times the variance of &Phi; over recent steps. It peaks where order is about to break, which is where the flock reacts most to one member turning.</p>
+
+      <button id="b-sweep">Run noise sweep (about 3 min)</button>
+      <button id="b-reset1">Reset</button>
+
+      <div class="legend">
+        <span class="sw" style="background:#3fa4a8"></span>heading close to the flock's &nbsp;
+        <span class="sw" style="background:#e07a42"></span>heading away from it<br>
+        Lower panel: &Phi; (teal) and &chi; scaled to its maximum (gold) against &eta;. The dashed line marks where &chi; peaked in this sweep; with one short run per point it moves a little between sweeps.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 2. GRAY-SCOTT ============ -->
+<div class="pane" id="turing">
+  <div class="grid">
+    <div><canvas id="cv2" width="820" height="560"></canvas></div>
+    <div class="side">
+      <h3>Gray&ndash;Scott reaction&ndash;diffusion</h3>
+      <p>Two virtual chemicals on a grid. <b>V makes more of itself by consuming U</b>; U is fed in everywhere and <b>spreads twice as fast</b> as V; V decays. From a few seeds, spots, stripes and mazes form with no blueprint. The feed rate F and the removal rate k pick which.</p>
+      <p>Turing (1952) showed that chemicals that react and spread at different rates can form such patterns. Gray&ndash;Scott is one example, of the kind where one chemical feeds on the other; Sim 11 in the report uses the activator&ndash;inhibitor kind (Gierer&ndash;Meinhardt) to spread drones over an area, with the field computed centrally. There it spread the drones about as well as simple rules, not better. Fields laid down by ground robots for the drones to follow are part of the LIMINAL design but are not simulated yet.</p>
+
+      <div class="ctl">
+        <label for="s-f">Feed rate F <span id="v-f">0.0300</span></label>
+        <input type="range" id="s-f" min="0.010" max="0.090" step="0.0005" value="0.030">
+      </div>
+      <div class="ctl">
+        <label for="s-k">Removal rate k <span id="v-k">0.0620</span></label>
+        <input type="range" id="s-k" min="0.045" max="0.070" step="0.0005" value="0.062">
+      </div>
+
+      <div class="note" id="presets-note">
+        <b>Try the presets.</b> Small changes in F and k give very different patterns. Each preset re-seeds the grid; patterns take about half a minute to fill it.
+      </div>
+
+      <button id="b-seed">Re-seed</button>
+      <span id="preset-buttons"></span>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 3. TOPOLOGY ============ -->
+<div class="pane" id="topo">
+  <div class="grid">
+    <div>
+      <canvas id="cv3" width="816" height="560"></canvas>
+      <canvas id="cv3b" width="820" height="150" style="margin-top:.6rem"></canvas>
+    </div>
+    <div class="side">
+      <h3>When is a search finished?</h3>
+      <p>Agents explore an unknown floor. Each grid cell is <b>unknown</b>, <b>seen free</b> or <b>seen wall</b>. The unknown cells form separate regions; counting them is the Betti number &beta;&#8320; of the unknown area.</p>
+      <p>An unknown region that touches seen free space is <b>open</b>: an agent can go and look. One surrounded only by walls is <b>sealed</b>: no sensor can see into it from outside. Here the sealed regions are the insides of pillars, but from the map alone a sealed region could also be a closed-off room, so it is reported rather than counted as searched.</p>
+
+      <div class="ctl">
+        <label for="s-a3">Agents <span id="v-a3">6</span></label>
+        <input type="range" id="s-a3" min="1" max="20" step="1" value="6">
+      </div>
+      <div class="ctl">
+        <label for="s-r3">Sensor range (cells) <span id="v-r3">4</span></label>
+        <input type="range" id="s-r3" min="2" max="8" step="1" value="4">
+      </div>
+
+      <div class="readout">
+        <div class="rd hot"><div class="v" id="r-open">&mdash;</div><div class="l">Open unknown regions</div></div>
+        <div class="rd purple"><div class="v" id="r-sealed">&mdash;</div><div class="l">Sealed regions</div></div>
+        <div class="rd"><div class="v" id="r-cov">&mdash;</div><div class="l">Free space seen</div></div>
+        <div class="rd gold"><div class="v" id="r-t">&mdash;</div><div class="l">Steps</div></div>
+      </div>
+      <div id="r-done" class="phase">&mdash;</div>
+
+      <div class="note">
+        <b>The idea.</b> A list of waypoints can be finished and still leave a corner behind a pillar unseen. The count of open regions does not depend on any plan: the search of this map is finished only when it reaches zero. It assumes the map is right; a missed sensor reading would hide a region. The agents here are points; real drones cannot pass gaps narrower than themselves, so in the report's Sim 12 the count of open regions never reaches zero, and the search instead stops when no frontier is left and hands rescuers the list of regions it could not see into.
+      </div>
+
+      <button id="b-reset3">New floor</button>
+      <button id="b-pause3">Pause</button>
+
+      <div class="legend">
+        <span class="sw" style="background:#22303a"></span>unknown &nbsp;
+        <span class="sw" style="background:#1b3b3d"></span>seen free &nbsp;
+        <span class="sw" style="background:#55636e"></span>seen wall &nbsp;
+        <span class="sw" style="background:#e07a42"></span>agent<br>
+        Agents head for the nearest open unknown cell along seen free space. Sealed specks under 4 cells, such as wall corners no ray reaches, are not counted. Lower panel: open regions (orange) and sealed regions (purple) over time.
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+/* ================= tabs ================= */
+document.querySelectorAll('.tab').forEach(function(t){
+  t.addEventListener('click', function(){
+    document.querySelectorAll('.tab').forEach(function(x){x.classList.remove('on');});
+    document.querySelectorAll('.pane').forEach(function(x){x.classList.remove('on');});
+    t.classList.add('on');
+    document.getElementById(t.dataset.p).classList.add('on');
+  });
+});
+
+/* ================= 1. VICSEK ================= */
+(function(){
+  var cv=document.getElementById('cv1'), ctx=cv.getContext('2d');
+  var cb=document.getElementById('cv1b'), cbx=cb.getContext('2d');
+  var W=cv.width, H=cv.height;
+  var L=60;                       // periodic box side
+  var R=3.2;                      // interaction radius
+  var V=0.55;                     // distance moved per step
+  var N=300, eta=2.90;
+  var ag=[];
+  var phiHist=[], curve=[];       // curve: {eta, phi, chi}
+  var sweep=false, sweepEta=0, hold=0;
+  var HOLD=150, SETTLE=50;        // steps per noise level, of which the first SETTLE are discarded
+
+  function init(n, aligned){
+    ag=[];
+    for(var i=0;i<n;i++){
+      ag.push({x:Math.random()*L, y:Math.random()*L, th:aligned?0:Math.random()*Math.PI*2});
+    }
+    phiHist=[];
+  }
+  init(N, false);
+
+  function step(){
+    var nc=Math.max(1,Math.floor(L/R)), cell=[];
+    for(var i=0;i<nc*nc;i++) cell.push([]);
+    function cidx(a){ return [Math.min(nc-1,Math.floor(a.x/L*nc)), Math.min(nc-1,Math.floor(a.y/L*nc))]; }
+    ag.forEach(function(a,i){ var c=cidx(a); cell[c[1]*nc+c[0]].push(i); });
+    var nth=new Array(ag.length);
+    for(var i=0;i<ag.length;i++){
+      var a=ag[i], sx=0, sy=0, c=cidx(a);
+      for(var dy=-1;dy<=1;dy++)for(var dx=-1;dx<=1;dx++){
+        var bucket=cell[((c[1]+dy+nc)%nc)*nc+((c[0]+dx+nc)%nc)];
+        for(var k=0;k<bucket.length;k++){
+          var b=ag[bucket[k]];
+          var ddx=b.x-a.x, ddy=b.y-a.y;
+          if(ddx> L/2) ddx-=L; if(ddx<-L/2) ddx+=L;
+          if(ddy> L/2) ddy-=L; if(ddy<-L/2) ddy+=L;
+          if(ddx*ddx+ddy*ddy < R*R){ sx+=Math.cos(b.th); sy+=Math.sin(b.th); }
+        }
+      }
+      var mean=(sx===0&&sy===0)?a.th:Math.atan2(sy,sx);
+      nth[i]=mean + (Math.random()-0.5)*eta;
+    }
+    for(var j=0;j<ag.length;j++){
+      var q=ag[j]; q.th=nth[j];
+      q.x=((q.x+Math.cos(q.th)*V)%L+L)%L;
+      q.y=((q.y+Math.sin(q.th)*V)%L+L)%L;
+    }
+  }
+
+  function order(){
+    var sx=0, sy=0;
+    ag.forEach(function(a){ sx+=Math.cos(a.th); sy+=Math.sin(a.th); });
+    return Math.sqrt(sx*sx+sy*sy)/ag.length;
+  }
+
+  function draw(){
+    ctx.fillStyle='#0d1216'; ctx.fillRect(0,0,W,H);
+    var sc=Math.min(W,H)/L, ox=(W-L*sc)/2, oy=(H-L*sc)/2;
+    var mx=0,my=0;
+    ag.forEach(function(a){ mx+=Math.cos(a.th); my+=Math.sin(a.th); });
+    var mth=Math.atan2(my,mx);
+    ag.forEach(function(a){
+      var d=Math.abs(Math.atan2(Math.sin(a.th-mth),Math.cos(a.th-mth)));   // 0 aligned .. pi opposed
+      var t=Math.min(1,d/1.6);
+      var r=Math.round(63+(224-63)*t), g=Math.round(164+(122-164)*t), b=Math.round(168+(66-168)*t);
+      var px=ox+a.x*sc, py=oy+a.y*sc;
+      ctx.strokeStyle='rgb('+r+','+g+','+b+')';
+      ctx.lineWidth=1.6; ctx.beginPath();
+      ctx.moveTo(px,py);
+      ctx.lineTo(px+Math.cos(a.th)*7, py+Math.sin(a.th)*7);
+      ctx.stroke();
+    });
+    ctx.strokeStyle='#2a343e'; ctx.lineWidth=1; ctx.strokeRect(ox,oy,L*sc,L*sc);
+  }
+
+  function drawCurve(){
+    var w=cb.width,h=cb.height;
+    cbx.fillStyle='#0d1216'; cbx.fillRect(0,0,w,h);
+    cbx.strokeStyle='#2a343e'; cbx.lineWidth=1;
+    cbx.beginPath(); cbx.moveTo(38,h-22); cbx.lineTo(w-10,h-22); cbx.stroke();
+    cbx.fillStyle='#8fa0b0'; cbx.font='11px monospace';
+    function X(e){ return 38+(e/5)*(w-52); }
+    function Y(v){ return (h-22)-v*(h-40); }
+    cbx.fillText('1',22,Y(1)+4); cbx.fillText('0',22,h-18);
+    for(var e=0;e<=5;e++) cbx.fillText(String(e),X(e)-3,h-6);
+    cbx.fillText('noise η',w-70,h-6);
+    if(curve.length===0){
+      cbx.fillText(sweep?'sweeping: first point after '+HOLD+' steps':'press "Run noise sweep" to draw Φ and χ against η',44,20);
+      return;
+    }
+    var maxChi=0; curve.forEach(function(c){ if(c.chi>maxChi) maxChi=c.chi; });
+    cbx.strokeStyle='#3fa4a8'; cbx.lineWidth=2; cbx.beginPath();
+    curve.forEach(function(c,i){ var x=X(c.eta),y=Y(c.phi); i?cbx.lineTo(x,y):cbx.moveTo(x,y); });
+    cbx.stroke();
+    if(maxChi>0){
+      cbx.strokeStyle='#d9b25a'; cbx.lineWidth=1.6; cbx.beginPath();
+      curve.forEach(function(c,i){ var x=X(c.eta),y=Y(c.chi/maxChi); i?cbx.lineTo(x,y):cbx.moveTo(x,y); });
+      cbx.stroke();
+      if(!sweep){
+        var pk=curve.reduce(function(a,b){return b.chi>a.chi?b:a;});
+        cbx.strokeStyle='rgba(224,122,66,.75)'; cbx.setLineDash([4,4]); cbx.lineWidth=1;
+        cbx.beginPath(); cbx.moveTo(X(pk.eta),8); cbx.lineTo(X(pk.eta),h-22); cbx.stroke();
+        cbx.setLineDash([]);
+        cbx.fillStyle='#e07a42'; cbx.fillText('χ peak at η = '+pk.eta.toFixed(1), Math.min(X(pk.eta)+5, w-150), 16);
+      }
+    }
+  }
+
+  var eEta=document.getElementById('s-eta'), eN=document.getElementById('s-n');
+  function setEta(v){ eta=v; eEta.value=v; document.getElementById('v-eta').textContent=v.toFixed(2); phiHist=[]; }
+  eEta.addEventListener('input',function(){ sweep=false; setEta(+eEta.value); });
+  eN.addEventListener('input',function(){ N=+eN.value; document.getElementById('v-n').textContent=N; sweep=false; curve=[]; init(N,false); });
+  document.getElementById('b-reset1').addEventListener('click',function(){ sweep=false; curve=[]; init(N,false); });
+  document.getElementById('b-sweep').addEventListener('click',function(){
+    // start from an ordered flock and raise the noise in steps of 0.1
+    init(N,true); curve=[]; sweep=true; sweepEta=0.1; hold=0; setEta(sweepEta);
+  });
+
+  function loop(){
+    step();
+    var phi=order();
+    phiHist.push(phi); if(phiHist.length>140) phiHist.shift();
+    var m=phiHist.reduce(function(a,b){return a+b;},0)/phiHist.length;
+    var chi=ag.length*phiHist.reduce(function(a,b){return a+(b-m)*(b-m);},0)/phiHist.length;
+
+    document.getElementById('r-phi').textContent=phi.toFixed(3);
+    document.getElementById('r-chi').textContent=phiHist.length<30?'—':chi.toFixed(2);
+    var ph=document.getElementById('r-phase');
+    if(phi>0.7){ ph.textContent='Ordered: moving as one'; ph.style.background='rgba(63,164,168,.16)'; ph.style.color='#3fa4a8'; }
+    else if(phi>0.3){ ph.textContent='Partly ordered'; ph.style.background='rgba(224,122,66,.18)'; ph.style.color='#e07a42'; }
+    else { ph.textContent='Disordered'; ph.style.background='rgba(143,160,176,.14)'; ph.style.color='#8fa0b0'; }
+
+    if(sweep){
+      hold++;
+      if(hold===SETTLE) phiHist=[];               // discard the transient after each change
+      if(hold>=HOLD){
+        var mm=phiHist.reduce(function(a,b){return a+b;},0)/phiHist.length;
+        var vv=phiHist.reduce(function(a,b){return a+(b-mm)*(b-mm);},0)/phiHist.length;
+        curve.push({eta:sweepEta, phi:mm, chi:ag.length*vv});
+        hold=0; sweepEta=Math.round((sweepEta+0.1)*10)/10;
+        if(sweepEta>5.0+1e-9){ sweep=false; } else { setEta(sweepEta); }
+      }
+    }
+    draw(); drawCurve();
+    requestAnimationFrame(loop);
+  }
+  loop();
+})();
+
+/* ================= 2. GRAY-SCOTT ================= */
+(function(){
+  var cv=document.getElementById('cv2'), ctx=cv.getContext('2d');
+  var GW=205, GH=140;
+  var u=new Float32Array(GW*GH), v=new Float32Array(GW*GH);
+  var u2=new Float32Array(GW*GH), v2=new Float32Array(GW*GH);
+  var F=0.030, K=0.062, Du=0.16, Dv=0.08;
+  var off=document.createElement('canvas'); off.width=GW; off.height=GH;
+  var octx=off.getContext('2d'), img=octx.createImageData(GW,GH);
+
+  function seed(){
+    for(var i=0;i<GW*GH;i++){ u[i]=1; v[i]=0; }
+    for(var s=0;s<14;s++){
+      var cx=20+Math.random()*(GW-40), cy=20+Math.random()*(GH-40);
+      for(var y=-5;y<=5;y++)for(var x=-5;x<=5;x++){
+        var px=Math.round(cx+x), py=Math.round(cy+y);
+        if(px<0||py<0||px>=GW||py>=GH) continue;
+        u[py*GW+px]=0.5; v[py*GW+px]=0.28;
+      }
+    }
+  }
+  seed();
+
+  function step(){
+    // edges: no-flux (each edge cell copies its inner neighbour), so nothing flows in or out
+    for(var y=1;y<GH-1;y++){
+      for(var x=1;x<GW-1;x++){
+        var i=y*GW+x;
+        var lu=u[i-1]+u[i+1]+u[i-GW]+u[i+GW]-4*u[i];
+        var lv=v[i-1]+v[i+1]+v[i-GW]+v[i+GW]-4*v[i];
+        var uvv=u[i]*v[i]*v[i];
+        var a=u[i]+(Du*lu-uvv+F*(1-u[i]));
+        var b=v[i]+(Dv*lv+uvv-(F+K)*v[i]);
+        u2[i]=a<0?0:(a>1?1:a);
+        v2[i]=b<0?0:(b>1?1:b);
+      }
+    }
+    for(var xe=0;xe<GW;xe++){ u2[xe]=u2[GW+xe]; v2[xe]=v2[GW+xe]; u2[(GH-1)*GW+xe]=u2[(GH-2)*GW+xe]; v2[(GH-1)*GW+xe]=v2[(GH-2)*GW+xe]; }
+    for(var ye=0;ye<GH;ye++){ u2[ye*GW]=u2[ye*GW+1]; v2[ye*GW]=v2[ye*GW+1]; u2[ye*GW+GW-1]=u2[ye*GW+GW-2]; v2[ye*GW+GW-1]=v2[ye*GW+GW-2]; }
+    u.set(u2); v.set(v2);
+  }
+
+  function draw(){
+    var d=img.data;
+    for(var i=0;i<GW*GH;i++){
+      var t=Math.max(0,Math.min(1,v[i]*4.2));
+      d[i*4]  =Math.round(13+(224-13)*t);
+      d[i*4+1]=Math.round(18+(122-18)*t);
+      d[i*4+2]=Math.round(22+(66-22)*t*0.85+60*(1-t));
+      d[i*4+3]=255;
+    }
+    octx.putImageData(img,0,0);
+    ctx.imageSmoothingEnabled=false;
+    ctx.drawImage(off,0,0,cv.width,cv.height);
+  }
+
+  function setF(f){ F=f; document.getElementById('s-f').value=f; document.getElementById('v-f').textContent=f.toFixed(4); }
+  function setK(k){ K=k; document.getElementById('s-k').value=k; document.getElementById('v-k').textContent=k.toFixed(4); }
+  document.getElementById('s-f').addEventListener('input',function(e){ setF(+e.target.value); });
+  document.getElementById('s-k').addEventListener('input',function(e){ setK(+e.target.value); });
+  document.getElementById('b-seed').addEventListener('click',seed);
+  var PRESETS=[{name:'Spots',F:0.030,k:0.062},{name:'Stripes',F:0.038,k:0.061}];   // each was run in this page; the name says what formed
+  var holder=document.getElementById('preset-buttons');
+  PRESETS.forEach(function(p){
+    var b=document.createElement('button'); b.textContent=p.name+' (F '+p.F.toFixed(3)+', k '+p.k.toFixed(3)+')';
+    b.addEventListener('click',function(){ setF(p.F); setK(p.k); seed(); });
+    holder.appendChild(b);
+  });
+  window.GS_SET=function(f,k){ setF(f); setK(k); seed(); };
+
+  function loop(){ for(var i=0;i<9;i++) step(); draw(); requestAnimationFrame(loop); }
+  loop();
+})();
+
+/* ================= 3. UNEXPLORED REGIONS ================= */
+(function(){
+  var cv=document.getElementById('cv3'), ctx=cv.getContext('2d');
+  var cb=document.getElementById('cv3b'), cbx=cb.getContext('2d');
+  var CS=8;                                   // cell size in pixels
+  var GW=Math.floor(cv.width/CS), GH=Math.floor(cv.height/CS);
+  var UNKNOWN=0, FREE=1, WALL=2;
+  var g=new Uint8Array(GW*GH);                // the agents' shared map
+  var truth=new Uint8Array(GW*GH);            // 1 = wall in the real floor
+  var dist=new Int32Array(GW*GH);
+  var agents=[], NA=6, SR=4, paused=false, steps=0, doneAt=-1;
+  var hist=[], truthFree=0, stats={open:0, sealed:0, seen:0};
+
+  function buildRoom(){
+    truth.fill(0);
+    for(var x=0;x<GW;x++){ truth[x]=1; truth[(GH-1)*GW+x]=1; }
+    for(var y=0;y<GH;y++){ truth[y*GW]=1; truth[y*GW+GW-1]=1; }
+    function block(x0,y0,w,h){
+      for(var yy=y0;yy<y0+h;yy++)for(var xx=x0;xx<x0+w;xx++)
+        if(xx>0&&yy>0&&xx<GW-1&&yy<GH-1) truth[yy*GW+xx]=1;
+    }
+    for(var i=0;i<5;i++){
+      var w=4+Math.floor(Math.random()*6), h=4+Math.floor(Math.random()*6);
+      block(6+Math.floor(Math.random()*(GW-16)), 5+Math.floor(Math.random()*(GH-14)), w, h);
+    }
+    // two partitions, each with a 6-cell doorway
+    var px=Math.floor(GW*0.38), gap=6+Math.floor(Math.random()*(GH-16));
+    for(var y1=1;y1<GH-1;y1++) truth[y1*GW+px]=(y1<gap||y1>gap+5)?1:0;
+    var px2=Math.floor(GW*0.72), gap2=6+Math.floor(Math.random()*(GH-16));
+    for(var y2=1;y2<GH-1;y2++) truth[y2*GW+px2]=(y2<gap2||y2>gap2+5)?1:0;
+    truthFree=0; for(var j=0;j<GW*GH;j++) if(!truth[j]) truthFree++;
+  }
+
+  function reset(){
+    buildRoom();
+    g.fill(UNKNOWN);
+    agents=[];
+    for(var i=0;i<NA;i++){
+      var x,y,tries=0;
+      do{ x=2+Math.random()*(GW*0.3); y=2+Math.random()*(GH-4); tries++; }
+      while(truth[Math.floor(y)*GW+Math.floor(x)]===1 && tries<1000);
+      agents.push({x:x,y:y,th:Math.random()*Math.PI*2});
+    }
+    hist=[]; steps=0; doneAt=-1;
+    agents.forEach(sense); analyse();
+  }
+
+  function sense(a){
+    var ax=Math.floor(a.x), ay=Math.floor(a.y), r=SR;
+    for(var dy=-r;dy<=r;dy++){
+      for(var dx=-r;dx<=r;dx++){
+        if(dx*dx+dy*dy>r*r) continue;
+        var gx=ax+dx, gy=ay+dy;
+        if(gx<0||gy<0||gx>=GW||gy>=GH) continue;
+        // line of sight from the agent's cell centre to the target cell centre
+        var n=Math.max(Math.abs(dx),Math.abs(dy))*2, blocked=false;
+        for(var s=1;s<n;s++){
+          var ix=Math.floor(ax+0.5+dx*s/n), iy=Math.floor(ay+0.5+dy*s/n);
+          if((ix!==gx||iy!==gy)&&truth[iy*GW+ix]===1){ blocked=true; break; }
+        }
+        if(blocked) continue;
+        g[gy*GW+gx] = truth[gy*GW+gx]===1 ? WALL : FREE;
+      }
+    }
+  }
+
+  // label unknown regions (4-connected), classify open/sealed, and build the
+  // distance field from open frontier cells over seen free cells (BFS)
+  function analyse(){
+    var lab=new Int32Array(GW*GH).fill(-1), q=new Int32Array(GW*GH), open=0, sealed=0;
+    var nb=[1,-1,GW,-GW];
+    function ok(i,k){ var x=i%GW; if(k===0) return x<GW-1; if(k===1) return x>0; if(k===2) return i+GW<GW*GH; return i-GW>=0; }
+    var n=0;
+    for(var i=0;i<GW*GH;i++){
+      if(g[i]!==UNKNOWN||lab[i]>=0) continue;
+      var head=0, tail=0, isOpen=false; q[tail++]=i; lab[i]=n;
+      while(head<tail){
+        var c=q[head++];
+        for(var k=0;k<4;k++){ if(!ok(c,k)) continue; var m=c+nb[k];
+          if(g[m]===FREE) isOpen=true;
+          else if(g[m]===UNKNOWN&&lab[m]<0){ lab[m]=n; q[tail++]=m; } }
+      }
+      if(isOpen) open++; else if(tail>=4) sealed++;   // sealed specks under 4 cells (wall corners no ray reaches) are not counted
+      n++;
+    }
+    // distance field: 0 at unknown cells next to seen free space
+    dist.fill(-1); var head2=0, tail2=0;
+    for(var j=0;j<GW*GH;j++){
+      if(g[j]!==UNKNOWN) continue;
+      for(var k2=0;k2<4;k2++){ if(ok(j,k2)&&g[j+nb[k2]]===FREE){ dist[j]=0; q[tail2++]=j; break; } }
+    }
+    while(head2<tail2){
+      var c2=q[head2++];
+      for(var k3=0;k3<4;k3++){ if(!ok(c2,k3)) continue; var m2=c2+nb[k3];
+        if(g[m2]===FREE&&dist[m2]<0){ dist[m2]=dist[c2]+1; q[tail2++]=m2; } }
+    }
+    var seen=0; for(var z=0;z<GW*GH;z++) if(g[z]===FREE) seen++;
+    stats={open:open, sealed:sealed, seen:seen};
+  }
+
+  function moveAgent(a){
+    var ax=Math.floor(a.x), ay=Math.floor(a.y), here=ay*GW+ax;
+    var best=-1, bd=dist[here]>=0?dist[here]:1e9;
+    for(var dy=-1;dy<=1;dy++)for(var dx=-1;dx<=1;dx++){
+      if(!dx&&!dy) continue;
+      var x=ax+dx, y=ay+dy; if(x<1||y<1||x>=GW-1||y>=GH-1) continue;
+      var m=y*GW+x;
+      if(g[m]!==FREE||dist[m]<0) continue;
+      if(dx&&dy&&(g[ay*GW+x]!==FREE||g[y*GW+ax]!==FREE)) continue;   // no cutting corners
+      if(dist[m]<bd){ bd=dist[m]; best=m; }
+    }
+    var tx,ty;
+    if(best>=0){ tx=best%GW+0.5; ty=Math.floor(best/GW)+0.5; }
+    else if(dist[here]===1){ return; }                      // next to the frontier: look, then the map updates
+    else { tx=a.x+Math.cos(a.th); ty=a.y+Math.sin(a.th); a.th+=(Math.random()-0.5)*0.6; }
+    var ddx=tx-a.x, ddy=ty-a.y, d=Math.hypot(ddx,ddy), sp=0.32;
+    if(d<1e-9) return;
+    var nx=a.x+ddx/d*Math.min(sp,d), ny=a.y+ddy/d*Math.min(sp,d);
+    var cx=Math.floor(nx), cy=Math.floor(ny);
+    if(cx>0&&cy>0&&cx<GW-1&&cy<GH-1&&truth[cy*GW+cx]!==1){ a.x=nx; a.y=ny; a.th=Math.atan2(ddy,ddx); }
+    else { a.th+=1.6+Math.random(); }
+  }
+
+  function step(){
+    agents.forEach(function(a){ sense(a); });
+    analyse();
+    if(stats.open===0){ if(doneAt<0) doneAt=steps; return; }
+    agents.forEach(moveAgent);
+    steps++;
+  }
+
+  function draw(){
+    ctx.fillStyle='#0d1216'; ctx.fillRect(0,0,cv.width,cv.height);
+    for(var y=0;y<GH;y++)for(var x=0;x<GW;x++){
+      var s=g[y*GW+x];
+      ctx.fillStyle = s===UNKNOWN?'#22303a':(s===FREE?'#1b3b3d':'#55636e');
+      ctx.fillRect(x*CS,y*CS,CS-1,CS-1);
+    }
+    agents.forEach(function(a){
+      ctx.fillStyle='#e07a42';
+      ctx.beginPath(); ctx.arc(a.x*CS,a.y*CS,3.4,0,2*Math.PI); ctx.fill();
+    });
+  }
+
+  function drawHist(){
+    var w=cb.width,h=cb.height;
+    cbx.fillStyle='#0d1216'; cbx.fillRect(0,0,w,h);
+    cbx.strokeStyle='#2a343e'; cbx.beginPath(); cbx.moveTo(38,h-20); cbx.lineTo(w-10,h-20); cbx.stroke();
+    cbx.fillStyle='#8fa0b0'; cbx.font='11px monospace';
+    cbx.fillText('unknown regions over time: open (orange), sealed (purple); the search of this map is finished when open reaches 0',44,14);
+    if(hist.length<2) return;
+    var mx=1; hist.forEach(function(v){ mx=Math.max(mx,v[0],v[1]); });
+    [[0,'#e07a42'],[1,'#9b8bd0']].forEach(function(s){
+      cbx.strokeStyle=s[1]; cbx.lineWidth=2; cbx.beginPath();
+      hist.forEach(function(v,i){
+        var x=38+(i/(hist.length-1))*(w-52), y=(h-20)-(v[s[0]]/mx)*(h-42);
+        i?cbx.lineTo(x,y):cbx.moveTo(x,y);
+      });
+      cbx.stroke();
+    });
+    cbx.fillStyle='#8fa0b0'; cbx.fillText(String(mx),6,30); cbx.fillText('0',6,h-18);
+  }
+
+  function readout(){
+    document.getElementById('r-open').textContent=stats.open;
+    document.getElementById('r-sealed').textContent=stats.sealed;
+    document.getElementById('r-cov').textContent=(100*stats.seen/truthFree).toFixed(1)+'%';
+    document.getElementById('r-t').textContent=steps;
+    var el=document.getElementById('r-done');
+    if(doneAt>=0){ el.textContent='Finished after '+doneAt+' steps: no open region left'; el.style.background='rgba(63,164,168,.16)'; el.style.color='#3fa4a8'; }
+    else { el.textContent='Searching'; el.style.background='rgba(224,122,66,.18)'; el.style.color='#e07a42'; }
+  }
+
+  document.getElementById('s-a3').addEventListener('input',function(e){
+    NA=+e.target.value; document.getElementById('v-a3').textContent=NA; reset();
+  });
+  document.getElementById('s-r3').addEventListener('input',function(e){
+    SR=+e.target.value; document.getElementById('v-r3').textContent=SR; reset();
+  });
+  document.getElementById('b-reset3').addEventListener('click',reset);
+  document.getElementById('b-pause3').addEventListener('click',function(e){
+    paused=!paused; e.target.textContent=paused?'Resume':'Pause';
+  });
+  window.TOPO_STATE=function(){ return {open:stats.open, sealed:stats.sealed, seen:stats.seen, free:truthFree, steps:steps, doneAt:doneAt}; };
+
+  reset();
+  var tick=0;
+  function loop(){
+    if(!paused){
+      for(var i=0;i<2;i++) step();
+      tick++;
+      if(tick%3===0){ hist.push([stats.open,stats.sealed]); if(hist.length>400) hist.shift(); }
+      readout(); draw(); drawHist();
+    }
+    requestAnimationFrame(loop);
+  }
+  loop();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>LIMINAL Flock Explorer</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:wght@400;500&display=swap">
+<style>
+/* Layout: an instrument bench. The arena is the instrument; the side panel holds the dials and the live trace. */
+:root {
+  --bg: #f3f5f8;
+  --panel: #ffffff;
+  --ink: #141920;
+  --muted: #5a6472;
+  --rule: #d9dee6;
+  --agent: #3c4552;
+  --accent: #1f5fd6;
+  --accent-soft: #dbe6fb;
+  --trace-bg: #f7f9fc;
+  --font-display: "IBM Plex Sans Condensed", "Arial Narrow", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-data: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e1217; --panel: #161b22; --ink: #e5e9ef; --muted: #8d97a5; --rule: #2a313b;
+    --agent: #b6bfcc; --accent: #6fa3ff; --accent-soft: #1d2b45; --trace-bg: #12171d; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e1217; --panel: #161b22; --ink: #e5e9ef; --muted: #8d97a5; --rule: #2a313b;
+  --agent: #b6bfcc; --accent: #6fa3ff; --accent-soft: #1d2b45; --trace-bg: #12171d; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.55;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 20px 40px;
+}
+.wrap { max-width: 1120px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 20px; }
+h1 { font-family: var(--font-display); font-weight: 600; font-size: clamp(1.6rem, 3.2vw, 2.2rem); line-height: 1.1; margin: 0; letter-spacing: 0.005em; text-wrap: balance; }
+.tag { font-family: var(--font-data); font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); border: 1px solid var(--rule); border-radius: 4px; padding: 3px 8px; white-space: nowrap; }
+.lede { margin: 0; max-width: 68ch; color: var(--muted); }
+.bench { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 18px; align-items: start; }
+@media (max-width: 860px) { .bench { grid-template-columns: minmax(0, 1fr); } }
+.arena { position: relative; background: var(--panel); border: 1px solid var(--rule); border-radius: 8px; padding: 10px; }
+.arena canvas { display: block; width: 100%; aspect-ratio: 1 / 1; max-width: 100%; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 0.82rem; color: var(--muted); padding: 8px 4px 2px; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.dot { width: 9px; height: 9px; border-radius: 50%; background: var(--agent); display: inline-block; }
+.dot.real { background: var(--accent); width: 11px; height: 11px; }
+.panel { background: var(--panel); border: 1px solid var(--rule); border-radius: 8px; padding: 16px; display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.readout { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.metric .label { font-size: 0.74rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.metric .value { font-family: var(--font-data); font-variant-numeric: tabular-nums; font-size: 1.9rem; font-weight: 500; line-height: 1.1; }
+.metric .value.accent { color: var(--accent); }
+.metric .hint { font-size: 0.78rem; color: var(--muted); }
+.trace { background: var(--trace-bg); border: 1px solid var(--rule); border-radius: 6px; }
+.trace canvas { display: block; width: 100%; height: 110px; }
+.control { display: flex; flex-direction: column; gap: 4px; }
+.control .row { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.control label { font-weight: 500; font-size: 0.9rem; }
+.control output { font-family: var(--font-data); font-variant-numeric: tabular-nums; font-size: 0.88rem; color: var(--ink); }
+.control .hint { font-size: 0.78rem; color: var(--muted); }
+input[type="range"] { width: 100%; accent-color: var(--accent); }
+.buttons { display: flex; flex-wrap: wrap; gap: 8px; }
+button {
+  font-family: var(--font-body); font-size: 0.86rem; font-weight: 500; color: var(--ink); background: var(--panel);
+  border: 1px solid var(--rule); border-radius: 6px; padding: 7px 12px; cursor: pointer;
+}
+button:hover { border-color: var(--muted); }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.toggle { display: flex; align-items: center; gap: 8px; font-size: 0.9rem; }
+.toggle input { accent-color: var(--accent); width: 16px; height: 16px; }
+.notes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+@media (max-width: 860px) { .notes { grid-template-columns: minmax(0, 1fr); } }
+.note h2 { font-family: var(--font-display); font-weight: 600; font-size: 1.12rem; margin: 0 0 4px; text-wrap: balance; }
+.note p { margin: 0; color: var(--muted); max-width: 60ch; }
+.note code, .lede code { font-family: var(--font-data); font-size: 0.85em; }
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>LIMINAL Flock Explorer</h1>
+    <span class="tag">Simulation · runs in your browser</span>
+  </header>
+  <p class="lede">Each dot is an agent that copies the average heading of everyone within one radius, then adds random noise: the Vicsek model behind LIMINAL's Layer 2. Turn the noise dial and watch the flock form, break into clusters, and dissolve. The blue dots stand in for the 8 real drones that will fly among virtual agents (about 120 fit the 4 x 4 m net; larger flocks are shown on screen).</p>
+
+  <div class="bench">
+    <div class="arena">
+      <canvas id="arena" width="900" height="900" aria-label="Flock arena"></canvas>
+      <div class="legend">
+        <span><i class="dot"></i>virtual agent</span>
+        <span><i class="dot real"></i>stand-in for a real drone</span>
+        <span>Box wraps around at the edges (periodic)</span>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="readout">
+        <div class="metric">
+          <div class="label">Order</div>
+          <div class="value accent" id="phi">0.00</div>
+          <div class="hint">0 = random, 1 = one flock</div>
+        </div>
+        <div class="metric">
+          <div class="label">Fluctuation</div>
+          <div class="value" id="chi">0.0</div>
+          <div class="hint">N × variance of order, last 600 steps</div>
+        </div>
+      </div>
+      <div class="trace"><canvas id="trace" width="620" height="220" aria-label="Order parameter over time"></canvas></div>
+
+      <div class="control">
+        <div class="row"><label for="eta">Noise</label><output id="etaOut" for="eta">2.00 rad</output></div>
+        <input id="eta" type="range" min="0" max="6.28" step="0.01" value="2.0">
+        <div class="hint">Below about 2: one flock. Around 2.5: the fluctuation peak. Above 4: no order.</div>
+      </div>
+      <div class="control">
+        <div class="row"><label for="nsl">Agents</label><output id="nOut" for="nsl">512</output></div>
+        <input id="nsl" type="range" min="0" max="6" step="1" value="3">
+        <div class="hint">Density stays at 2 agents per radius², so the box grows with the flock.</div>
+      </div>
+      <div class="control">
+        <div class="row"><label for="spf">Steps per frame</label><output id="spfOut" for="spf">4</output></div>
+        <input id="spf" type="range" min="1" max="16" step="1" value="4">
+      </div>
+      <label class="toggle"><input id="real" type="checkbox" checked>Show 8 real-drone stand-ins</label>
+      <div class="buttons">
+        <button id="play" class="primary" type="button">Pause</button>
+        <button id="reset" type="button">Scatter</button>
+        <button id="align" type="button">Align everyone</button>
+        <button id="nudge" type="button">Turn one drone</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="notes">
+    <div class="note">
+      <h2>What the order number means</h2>
+      <p>Add up every agent's heading as an arrow of length 1 and divide by the number of agents. If all point the same way the result is 1; if they point at random it shrinks toward zero.</p>
+    </div>
+    <div class="note">
+      <h2>Why the fluctuation peak matters</h2>
+      <p>Near the noise level where order is about to break, the flock swings the most and reacts most strongly to one member turning. Try "Turn one drone" at noise 1.0 and then at 2.5.</p>
+    </div>
+    <div class="note">
+      <h2>Why it needs many agents</h2>
+      <p>With 64 agents the switch from order to disorder is a soft blur. With 4,096 it becomes sharp. That is why LIMINAL studies large flocks in simulation and on an FPGA, while the 8 real drones fly among about 120 virtual agents in the net.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const SIZES = [64, 128, 256, 512, 1024, 2048, 4096];
+  const DENSITY = 2.0, R = 1.0, V0 = 0.03, NREAL = 8, WIN = 600;
+  const arena = document.getElementById('arena'), actx = arena.getContext('2d');
+  const trace = document.getElementById('trace'), tctx = trace.getContext('2d');
+  const el = id => document.getElementById(id);
+  let N, L, ncell, x, y, th, nth, cth, sth, head, next, phiHist = [], running = true, eta = 2.0, spf = 4, showReal = true;
+  let rngState = 12345;
+  function rand() { // xorshift32, deterministic
+    rngState ^= rngState << 13; rngState ^= rngState >>> 17; rngState ^= rngState << 5;
+    return (rngState >>> 0) / 4294967296;
+  }
+  function css(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+
+  function init(n) {
+    N = n; L = Math.sqrt(N / DENSITY); ncell = Math.max(3, Math.floor(L / R));
+    x = new Float64Array(N); y = new Float64Array(N); th = new Float64Array(N); nth = new Float64Array(N); cth = new Float64Array(N); sth = new Float64Array(N);
+    head = new Int32Array(ncell * ncell); next = new Int32Array(N);
+    for (let i = 0; i < N; i++) { x[i] = rand() * L; y[i] = rand() * L; th[i] = (rand() * 2 - 1) * Math.PI; }
+    phiHist = [];
+  }
+
+  function step() {
+    head.fill(-1);
+    const cs = L / ncell;
+    for (let i = 0; i < N; i++) {
+      const c = (Math.floor(x[i] / cs) % ncell) * ncell + (Math.floor(y[i] / cs) % ncell);
+      next[i] = head[c]; head[c] = i;
+    }
+    const half = L / 2, R2 = R * R;
+    for (let i = 0; i < N; i++) { cth[i] = Math.cos(th[i]); sth[i] = Math.sin(th[i]); }
+    for (let i = 0; i < N; i++) {
+      const cx = Math.floor(x[i] / cs) % ncell, cy = Math.floor(y[i] / cs) % ncell;
+      let sx = 0, sy = 0;
+      for (let ax = -1; ax <= 1; ax++) for (let ay = -1; ay <= 1; ay++) {
+        let j = head[((cx + ax + ncell) % ncell) * ncell + ((cy + ay + ncell) % ncell)];
+        while (j >= 0) {
+          let dx = x[j] - x[i], dy = y[j] - y[i];
+          if (dx > half) dx -= L; else if (dx < -half) dx += L;
+          if (dy > half) dy -= L; else if (dy < -half) dy += L;
+          if (dx * dx + dy * dy <= R2) { sx += cth[j]; sy += sth[j]; }
+          j = next[j];
+        }
+      }
+      nth[i] = (sx === 0 && sy === 0 ? th[i] : Math.atan2(sy, sx)) + eta * (rand() - 0.5);
+    }
+    let ox = 0, oy = 0;
+    for (let i = 0; i < N; i++) {
+      th[i] = nth[i];
+      const c = Math.cos(th[i]), s = Math.sin(th[i]);
+      ox += c; oy += s;
+      x[i] = (x[i] + V0 * c + L) % L; y[i] = (y[i] + V0 * s + L) % L;
+    }
+    phiHist.push(Math.hypot(ox, oy) / N);
+    if (phiHist.length > WIN) phiHist.shift();
+  }
+
+  function drawArena() {
+    const W = arena.width, sc = W / L;
+    actx.fillStyle = css('--panel'); actx.fillRect(0, 0, W, W);
+    const tail = Math.max(4, Math.min(16, 0.5 * sc));
+    actx.strokeStyle = css('--agent'); actx.lineWidth = N > 2048 ? 1 : 1.4; actx.globalAlpha = 0.85;
+    actx.beginPath();
+    const start = showReal ? NREAL : 0;
+    for (let i = start; i < N; i++) {
+      const px = x[i] * sc, py = W - y[i] * sc;
+      actx.moveTo(px, py); actx.lineTo(px - Math.cos(th[i]) * tail, py + Math.sin(th[i]) * tail);
+    }
+    actx.stroke(); actx.globalAlpha = 1;
+    if (showReal) {
+      actx.fillStyle = css('--accent'); actx.strokeStyle = css('--accent'); actx.lineWidth = 2.2;
+      for (let i = 0; i < NREAL; i++) {
+        const px = x[i] * sc, py = W - y[i] * sc;
+        actx.beginPath(); actx.arc(px, py, 6, 0, 2 * Math.PI); actx.fill();
+        actx.beginPath(); actx.moveTo(px, py); actx.lineTo(px + Math.cos(th[i]) * 18, py - Math.sin(th[i]) * 18); actx.stroke();
+      }
+    }
+  }
+
+  function drawTrace() {
+    const W = trace.width, H = trace.height, pad = 22;
+    tctx.clearRect(0, 0, W, H);
+    tctx.strokeStyle = css('--rule'); tctx.lineWidth = 1;
+    tctx.fillStyle = css('--muted'); tctx.font = '20px "IBM Plex Mono", monospace';
+    [0, 0.5, 1].forEach(v => {
+      const yy = H - pad - v * (H - 2 * pad);
+      tctx.beginPath(); tctx.moveTo(50, yy); tctx.lineTo(W - 8, yy); tctx.stroke();
+      tctx.fillText(v.toFixed(1), 6, yy + 7);
+    });
+    if (phiHist.length < 2) return;
+    tctx.strokeStyle = css('--accent'); tctx.lineWidth = 3; tctx.beginPath();
+    for (let k = 0; k < phiHist.length; k++) {
+      const xx = 50 + (k / (WIN - 1)) * (W - 58), yy = H - pad - phiHist[k] * (H - 2 * pad);
+      if (k === 0) tctx.moveTo(xx, yy); else tctx.lineTo(xx, yy);
+    }
+    tctx.stroke();
+  }
+
+  function readouts() {
+    if (!phiHist.length) return;
+    const n = phiHist.length, m = phiHist.reduce((a, b) => a + b, 0) / n;
+    const v = phiHist.reduce((a, b) => a + (b - m) * (b - m), 0) / n;
+    el('phi').textContent = phiHist[n - 1].toFixed(2);
+    el('chi').textContent = n > 100 ? (N * v).toFixed(1) : '…';
+  }
+
+  function frame() {
+    if (running) for (let k = 0; k < spf; k++) step();
+    drawArena(); drawTrace(); readouts();
+    requestAnimationFrame(frame);
+  }
+
+  el('eta').addEventListener('input', e => { eta = +e.target.value; el('etaOut').textContent = eta.toFixed(2) + ' rad'; phiHist = []; });
+  el('nsl').addEventListener('input', e => { const n = SIZES[+e.target.value]; el('nOut').textContent = n.toLocaleString('en-US'); init(n); });
+  el('spf').addEventListener('input', e => { spf = +e.target.value; el('spfOut').textContent = spf; });
+  el('real').addEventListener('change', e => { showReal = e.target.checked; });
+  el('play').addEventListener('click', () => { running = !running; el('play').textContent = running ? 'Pause' : 'Play'; });
+  el('reset').addEventListener('click', () => init(N));
+  el('align').addEventListener('click', () => { const a = (rand() * 2 - 1) * Math.PI; for (let i = 0; i < N; i++) th[i] = a; phiHist = []; });
+  el('nudge').addEventListener('click', () => { th[0] += Math.PI / 2; });
+
+  init(512);
+  for (let k = 0; k < 400; k++) step();     // open in a running, partly ordered state
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    running = false; el('play').textContent = 'Play';
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
+
+</body>
+</html>
