@@ -1,0 +1,165 @@
+{
+ "tool": "Yosys synth_xilinx -family xcup (open-source estimate; Vivado will differ)",
+ "device": {
+  "part": "xcku5p-ffvb676-2-i",
+  "LUT": 216960,
+  "FF": 433920,
+  "DSP": 1824,
+  "BRAM36": 480
+ },
+ "builds": [
+  {
+   "N": 4096,
+   "P": 16,
+   "WALLS": 0,
+   "AW": 12,
+   "cells": {
+    "BUFG": 1,
+    "CARRY4": 2270,
+    "DSP48E2": 35,
+    "FDRE": 3797,
+    "IBUF": 261,
+    "INV": 2443,
+    "LUT1": 224,
+    "LUT2": 4346,
+    "LUT3": 10718,
+    "LUT4": 3249,
+    "LUT5": 1973,
+    "LUT6": 5283,
+    "MUXF7": 4417,
+    "MUXF8": 1527,
+    "MUXF9": 209,
+    "OBUF": 82,
+    "RAM32M16": 3,
+    "RAMB36E2": 18
+   },
+   "totals": {
+    "LUT": 25793,
+    "FF": 3797,
+    "DSP": 35,
+    "BRAM36": 18.0
+   },
+   "clocks_per_step": 1062400,
+   "us_per_step_at_250MHz": 4249.6,
+   "what": "physics runs: 4,096 agents, periodic box (version 1)"
+  },
+  {
+   "N": 4096,
+   "P": 16,
+   "WALLS": 1,
+   "AW": 12,
+   "cells": {
+    "BUFG": 1,
+    "CARRY4": 2510,
+    "DSP48E2": 51,
+    "FDRE": 4077,
+    "IBUF": 261,
+    "INV": 2539,
+    "LUT1": 224,
+    "LUT2": 5011,
+    "LUT3": 10729,
+    "LUT4": 3392,
+    "LUT5": 1989,
+    "LUT6": 5800,
+    "MUXF7": 4420,
+    "MUXF8": 1528,
+    "MUXF9": 210,
+    "OBUF": 82,
+    "RAM32M16": 3,
+    "RAMB36E2": 18
+   },
+   "totals": {
+    "LUT": 27145,
+    "FF": 4077,
+    "DSP": 51,
+    "BRAM36": 18.0
+   },
+   "clocks_per_step": 1066752,
+   "us_per_step_at_250MHz": 4267.008,
+   "what": "4,096 agents in the walled arena (version 1.1)"
+  },
+  {
+   "N": 128,
+   "P": 16,
+   "WALLS": 1,
+   "AW": 7,
+   "cells": {
+    "BUFG": 1,
+    "CARRY4": 2440,
+    "DSP48E2": 43,
+    "FDRE": 3976,
+    "IBUF": 251,
+    "INV": 2539,
+    "LUT1": 224,
+    "LUT2": 4803,
+    "LUT3": 10651,
+    "LUT4": 3374,
+    "LUT5": 2012,
+    "LUT6": 5776,
+    "MUXF7": 4412,
+    "MUXF8": 1524,
+    "MUXF9": 210,
+    "OBUF": 82,
+    "RAM32M16": 3,
+    "RAMB18E2": 3
+   },
+   "totals": {
+    "LUT": 26840,
+    "FF": 3976,
+    "DSP": 43,
+    "BRAM36": 1.5
+   },
+   "clocks_per_step": 1592,
+   "us_per_step_at_250MHz": 6.368,
+   "what": "the demo flock: 120 virtual + 8 drones, walled arena (version 1.1)"
+  }
+ ],
+ "rtl_tests": [
+  {
+   "test": "64 agents x 32 steps, periodic",
+   "lanes": [
+    1,
+    4,
+    8,
+    64
+   ],
+   "result": "bit-exact"
+  },
+  {
+   "test": "256 agents x 16 steps, periodic",
+   "lanes": [
+    16
+   ],
+   "result": "bit-exact"
+  },
+  {
+   "test": "128 agents (120 + 8 drones) x 40 steps, walled, drone positions written each step",
+   "lanes": [
+    1,
+    8,
+    16
+   ],
+   "result": "bit-exact"
+  },
+  {
+   "test": "64 agents (56 + 8 drones) x 40 steps, walled, noise 4.0",
+   "lanes": [
+    4,
+    64
+   ],
+   "result": "bit-exact"
+  }
+ ],
+ "clocks_per_step_formula": "(N/P) * (N + 2P + 22), plus P + 1 per block when WALLS = 1",
+ "config": {
+  "N": 4096,
+  "P": 16,
+  "AW": 12
+ },
+ "totals": {
+  "LUT": 25793,
+  "FF": 3797,
+  "DSP": 35,
+  "BRAM36": 18.0
+ }
+}

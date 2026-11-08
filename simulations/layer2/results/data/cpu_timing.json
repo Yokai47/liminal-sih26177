@@ -1,0 +1,32 @@
+{
+ "machine": "x86_64",
+ "cores_used": 1,
+ "rows": [
+  {
+   "n": 128,
+   "ms_per_step": 0.07058531999973638,
+   "steps_per_s": 14167.25177421785
+  },
+  {
+   "n": 512,
+   "ms_per_step": 0.29405562500414817,
+   "steps_per_s": 3400.7171261760195
+  },
+  {
+   "n": 4096,
+   "ms_per_step": 2.9247743349969824,
+   "steps_per_s": 341.90672013026665
+  },
+  {
+   "n": 16384,
+   "ms_per_step": 11.290329150006073,
+   "steps_per_s": 88.57137703549255
+  },
+  {
+   "n": 65536,
+   "ms_per_step": 62.42262729999766,
+   "steps_per_s": 16.019831962440286
+  }
+ ],
+ "note": "shared cloud virtual machine; a laptop core is typically faster"
+}
